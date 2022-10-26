@@ -1,12 +1,48 @@
-import React from 'react'
+import React, {useContext,useState, useEffect} from 'react'
 import MovieHero from '../components/MovieHero/MovieHero.component';
+import axios from 'axios';
 import { FaCcVisa, FaCcApplePay } from "react-icons/fa";
 import Cast from '../components/Cast/CastComponent';
-import TempPosters from "../config/TempPoster.config";
 import PosterSlider from "../components/PosterSlider/PosterSlider.component";
-
+import { MovieContext } from "../context/movie.context";
+import { useParams } from 'react-router-dom';
+import Slider from 'react-slick';
 
 const Movie = () => {
+  const { id } = useParams();
+  const { movie } = useContext(MovieContext);
+  const [cast, setCast ] = useState([]);
+  const [similarMovies, setSimilarMovies] = useState([]);
+  const [recommended, setRecommended] = useState([]);
+
+  useEffect(() => {
+    const requestCast = async () => {
+      const getCast = await axios.get(`/movie/${id}/credits`);
+      setCast(getCast.data.cast);
+    };
+    requestCast();
+  }, [id]);
+
+  useEffect(() => {
+    const requestSimilarMovies = async () => {
+      const getSimilarMovies = await axios.get(`/movie/${id}/similar`);
+      setSimilarMovies(getSimilarMovies.data.results);
+    };
+
+    requestSimilarMovies();
+  }, [id]);
+
+  useEffect(() => {
+    const requestRecommendedMovies = async () => {
+      const getRecommendedMovies = await axios.get(
+        `/movie/${id}/recommendations`
+      );
+      setRecommended(getRecommendedMovies.data.results);
+    };
+
+    requestRecommendedMovies();
+  }, [id]);
+
   const settings = {
     infinite: false,
     speed: 500,
@@ -39,19 +75,51 @@ const Movie = () => {
       },
     ],
   };
-
+  const settingsCast = {
+    infinite: false,
+    speed: 500,
+    slidesToShow: 6,
+    slidesToScroll: 4,
+    initialSlide: 0,
+    responsive: [
+      {
+        breakpoint: 1024,
+        settings: {
+          slidesToShow: 4,
+          slidesToScroll: 3,
+          infinite: true,
+        },
+      },
+      {
+        breakpoint: 600,
+        settings: {
+          slidesToShow: 5,
+          slidesToScroll: 2,
+          initialSlide: 2,
+        },
+      },
+      {
+        breakpoint: 480,
+        settings: {
+          slidesToShow: 2,
+          slidesToScroll: 1,
+        },
+      },
+    ],
+  };
 
   return (
     <>
       <MovieHero />
-      <div className='my-5 container px-4 lg:ml-20 lg:w-2/3'>
-        <div className='flex flex-col items-start gap-3'>
-          <h2 className='text-gray-800 font-bold text-2xl'>About the movie</h2>
-          <p>After a spell goes terribly wrong, Spider-Man (Tom Holland) is forced to battle foes from different dimensions, as he learns what it truly means to be a superhero.</p>
+      <div className="my-12 container  px-4 lg:ml-20 lg:w-2/3">
+        <div className="flex flex-col items-start gap-3">
+          <h2 className="text-gray-800 font-bold text-2xl">About the movie</h2>
+          <p>{movie.overview}</p>
         </div>
-        <div className='my-8'>
+        <div className="my-8">
           <hr />
         </div>
+
         <div className="my-8">
           <h2 className="text-gray-800 font-bold text-2xl mb-3">
             Applicable offers
@@ -85,48 +153,44 @@ const Movie = () => {
             </div>
           </div>
         </div>
-        <div className='my-8'>
-          <h2 className='text-gray-800 font-bold text-2xl mb-4'>Cast & Crew</h2>
-          <div className='flex flex-wrap gap-4'>
-            <Cast
-              image="https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/tom-holland-33741-15-12-2021-05-05-50.jpg"
-              castName="Tom Hollad" role="Actor" />
-            <Cast
-              image="https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/zendaya-2016258-18-01-2022-11-21-40.jpg"
-              castName="Zendaya" role="Actor" />
-            <Cast
-              image="https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/benedict-cumberbatch-6466-25-04-2018-02-01-01.jpg"
-              castName="Benedict Cumberbatch" role="Actor" />
-            <Cast
-              image="https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/marisa-tomei-23232-24-03-2017-17-29-33.jpg"
-              castName="Marisa Tomei" role="Actor" />
-            <Cast
-              image="https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/angourie-rice-38311-24-03-2017-16-05-52.jpg"
-              castName="Angourie Rice" role="Actor" />
-            <Cast
-              image="https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/willem-dafoe-2526-1659523287.jpg"
-              castName="Willem Dafoe" role="Actor" />
-          </div>
-        </div>
-        <div className='my-8'>
+
+        <div className="my-8">
           <hr />
         </div>
-        <div className='my-8'>
-          <PosterSlider
-            config={settings}
-            images={TempPosters}
-            title="You might also like"
-            isDark={false} />
+        <div className="my-8">
+          <h2 className="text-gray-800 font-bold text-2xl mb-4">Cast & crew</h2>
+
+          <Slider {...settingsCast}>
+            {cast.map((castdata) => (
+              <Cast
+                image={`https://image.tmdb.org/t/p/original/${castdata.profile_path}`}
+                castName={castdata.original_name}
+                role={castdata.character}
+              />
+            ))}
+          </Slider>
         </div>
-        <div className='my-8'>
+        <div className="my-8">
           <hr />
         </div>
-        <div className='my-8'>
+        <div className="my-8">
           <PosterSlider
             config={settings}
-            images={TempPosters}
-            title="BMS XCLUSIV"
-            isDark={false} />
+            images={similarMovies}
+            title="You Might Also like"
+            isDark={false}
+          />
+        </div>
+        <div className="my-8">
+          <hr />
+        </div>
+        <div className="my-8">
+          <PosterSlider
+            config={settings}
+            images={recommended}
+            title="BMS XCLUSIVE"
+            isDark={false}
+          />
         </div>
       </div>
     </>
